@@ -14,12 +14,13 @@ import lombok.Value;
 public class NodeEndpoint {
 
     @NonNull
-    private final NodeId id;
+    NodeId id;
 
     @NonNull
-    private final Address address;
+    Address address;
 
     public NodeEndpoint(String id, String host, int port) {
         this(new NodeId(id), new Address(host, port));
     }
+
 }

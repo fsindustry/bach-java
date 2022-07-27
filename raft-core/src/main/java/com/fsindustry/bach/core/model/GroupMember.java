@@ -1,5 +1,6 @@
 package com.fsindustry.bach.core.model;
 
+import com.fsindustry.bach.core.constant.ReplicatingState;
 import lombok.Data;
 
 /**

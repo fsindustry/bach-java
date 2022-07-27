@@ -1,4 +1,4 @@
-package com.fsindustry.bach.core.model;
+package com.fsindustry.bach.core.constant;
 
 import lombok.Data;
 

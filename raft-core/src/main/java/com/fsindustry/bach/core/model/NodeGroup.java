@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Store node information of one raft group
@@ -12,8 +14,14 @@ import java.util.Map;
 @Data
 public class NodeGroup {
 
+    /**
+     * the id of current node.
+     */
     private final NodeId seftId;
 
+    /**
+     * member mapping
+     */
     private Map<NodeId, GroupMember> memberMap;
 
     public NodeGroup(NodeEndpoint endPoint) {
@@ -26,6 +34,32 @@ public class NodeGroup {
     }
 
     private Map<NodeId, GroupMember> buildMemberMap(Collection<NodeEndpoint> endpoints) {
-        return null;
+        Map<NodeId, GroupMember> map = new HashMap<>();
+        for (NodeEndpoint endpoint : endpoints) {
+            map.put(endpoint.getId(), new GroupMember(endpoint));
+        }
+
+        if (map.isEmpty()) {
+            throw new IllegalArgumentException("endpoints is empty.");
+        }
+        return map;
+    }
+
+    GroupMember getMember(NodeId id) {
+        return memberMap.get(id);
+    }
+
+    GroupMember findMember(NodeId id) {
+        GroupMember member = getMember(id);
+        if (null == member) {
+            throw new IllegalArgumentException("id " + id + " is not exist.");
+        }
+        return member;
+    }
+
+    Collection<GroupMember> listReplicationTarget() {
+        return memberMap.values().stream()
+                .filter(v -> !v.getEndpoint().getId().equals(this.seftId))
+                .collect(Collectors.toList());
     }
 }

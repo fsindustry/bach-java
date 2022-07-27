@@ -4,6 +4,8 @@ package com.fsindustry.bach.core.model;
 import com.google.common.base.Preconditions;
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * Store Node Identity
  * which flags the node uniquely.
@@ -11,7 +13,7 @@ import lombok.Data;
  * @author fsindustry
  */
 @Data
-public class NodeId {
+public class NodeId implements Serializable {
 
     private final String value;
 

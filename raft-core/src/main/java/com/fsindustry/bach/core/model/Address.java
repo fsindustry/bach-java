@@ -9,8 +9,8 @@ import lombok.Value;
 public class Address {
 
     @NonNull
-    private final String host;
+    String host;
 
     @NonNull
-    private final int port;
+    Integer port;
 }
