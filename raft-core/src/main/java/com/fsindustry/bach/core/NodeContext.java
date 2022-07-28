@@ -3,6 +3,7 @@ package com.fsindustry.bach.core;
 import com.fsindustry.bach.core.connector.Connector;
 import com.fsindustry.bach.core.executor.TaskExecutor;
 import com.fsindustry.bach.core.log.Log;
+import com.fsindustry.bach.core.node.model.NodeEndpoint;
 import com.fsindustry.bach.core.node.model.NodeGroup;
 import com.fsindustry.bach.core.node.model.NodeId;
 import com.fsindustry.bach.core.node.store.NodeStore;

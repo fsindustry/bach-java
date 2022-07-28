@@ -7,6 +7,8 @@ import java.util.concurrent.ScheduledFuture;
  */
 public class ElectionTimeout {
 
+    public static final ElectionTimeout NONE = new ElectionTimeout(new NullScheduledFuture());
+
     /**
      * 存放定时任务执行结果
      */

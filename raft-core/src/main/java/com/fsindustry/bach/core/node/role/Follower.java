@@ -3,7 +3,9 @@ package com.fsindustry.bach.core.node.role;
 import com.fsindustry.bach.core.node.model.NodeId;
 import com.fsindustry.bach.core.schedule.ElectionTimeout;
 import lombok.Getter;
+import lombok.ToString;
 
+@ToString
 public class Follower extends AbstractNodeRole {
 
     @Getter
@@ -25,5 +27,10 @@ public class Follower extends AbstractNodeRole {
     @Override
     public void cancelTimeoutOrTask() {
         electionTimeout.cancel();
+    }
+
+    @Override
+    public NodeId getLeaderId(NodeId selfId) {
+        return leaderId;
     }
 }

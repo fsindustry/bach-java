@@ -1,10 +1,11 @@
-package com.fsindustry.bach.core.connector.model;
+package com.fsindustry.bach.core.connector.msg.vo;
 
 import com.fsindustry.bach.core.node.model.NodeId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
 /**
  * 选举RPC请求
