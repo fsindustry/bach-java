@@ -1,9 +1,9 @@
 package com.fsindustry.bach.core.connector;
 
-import com.fsindustry.bach.core.model.msg.AppendEntriesResult;
-import com.fsindustry.bach.core.model.msg.AppendEntriesRpc;
-import com.fsindustry.bach.core.model.msg.RequestVoteResult;
-import com.fsindustry.bach.core.model.msg.RequestVoteRpc;
+import com.fsindustry.bach.core.connector.model.AppendEntriesResult;
+import com.fsindustry.bach.core.connector.model.AppendEntriesRpc;
+import com.fsindustry.bach.core.connector.model.RequestVoteResult;
+import com.fsindustry.bach.core.connector.model.RequestVoteRpc;
 import com.fsindustry.bach.core.node.model.NodeEndpoint;
 
 import java.util.Collection;

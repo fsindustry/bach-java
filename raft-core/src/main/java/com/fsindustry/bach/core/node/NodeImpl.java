@@ -2,8 +2,8 @@ package com.fsindustry.bach.core.node;
 
 import com.fsindustry.bach.core.NodeContext;
 import com.fsindustry.bach.core.node.role.RoleName;
-import com.fsindustry.bach.core.model.msg.RequestVoteRpc;
-import com.fsindustry.bach.core.model.msg.RequestVoteRpcMsg;
+import com.fsindustry.bach.core.connector.model.RequestVoteRpc;
+import com.fsindustry.bach.core.connector.msg.RequestVoteRpcMsg;
 import com.fsindustry.bach.core.node.role.AbstractNodeRole;
 import com.fsindustry.bach.core.node.role.Candidate;
 import com.fsindustry.bach.core.node.role.Follower;

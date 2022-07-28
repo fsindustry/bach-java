@@ -1,4 +1,4 @@
-package com.fsindustry.bach.core.model.msg;
+package com.fsindustry.bach.core.connector.model;
 
 import lombok.Value;
 

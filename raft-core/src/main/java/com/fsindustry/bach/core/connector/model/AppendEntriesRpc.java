@@ -1,7 +1,10 @@
-package com.fsindustry.bach.core.model.msg;
+package com.fsindustry.bach.core.connector.model;
 
 import com.fsindustry.bach.core.node.model.NodeId;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +13,9 @@ import java.util.List;
  * 追加日志rpc请求
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AppendEntriesRpc {
 
     /**
