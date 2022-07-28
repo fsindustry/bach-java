@@ -1,4 +1,4 @@
-package com.fsindustry.bach.core.model;
+package com.fsindustry.bach.core.node.model;
 
 import lombok.Data;
 
@@ -33,6 +33,30 @@ public class NodeGroup {
         this.seftId = selfId;
     }
 
+    public GroupMember getMember(NodeId id) {
+        return memberMap.get(id);
+    }
+
+    public GroupMember findMember(NodeId id) {
+        GroupMember member = getMember(id);
+        if (null == member) {
+            throw new IllegalArgumentException("id " + id + " is not exist.");
+        }
+        return member;
+    }
+
+    public Collection<GroupMember> listReplicationTarget() {
+        return memberMap.values().stream()
+                .filter(v -> !v.getEndpoint().getId().equals(this.seftId))
+                .collect(Collectors.toList());
+    }
+
+    public Collection<NodeEndpoint> listEndpointExceptSelf() {
+        return listReplicationTarget().stream()
+                .map(GroupMember::getEndpoint)
+                .collect(Collectors.toList());
+    }
+
     private Map<NodeId, GroupMember> buildMemberMap(Collection<NodeEndpoint> endpoints) {
         Map<NodeId, GroupMember> map = new HashMap<>();
         for (NodeEndpoint endpoint : endpoints) {
@@ -43,23 +67,5 @@ public class NodeGroup {
             throw new IllegalArgumentException("endpoints is empty.");
         }
         return map;
-    }
-
-    GroupMember getMember(NodeId id) {
-        return memberMap.get(id);
-    }
-
-    GroupMember findMember(NodeId id) {
-        GroupMember member = getMember(id);
-        if (null == member) {
-            throw new IllegalArgumentException("id " + id + " is not exist.");
-        }
-        return member;
-    }
-
-    Collection<GroupMember> listReplicationTarget() {
-        return memberMap.values().stream()
-                .filter(v -> !v.getEndpoint().getId().equals(this.seftId))
-                .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,5 @@
-package com.fsindustry.bach.core.model.role;
+package com.fsindustry.bach.core.node.role;
 
-import com.fsindustry.bach.core.constant.RoleName;
 import com.fsindustry.bach.core.schedule.LogReplicationTask;
 
 public class Leader extends AbstractNodeRole {

@@ -1,4 +1,4 @@
-package com.fsindustry.bach.core.constant;
+package com.fsindustry.bach.core.node.role;
 
 public enum RoleName {
     FOLLOWER,

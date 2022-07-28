@@ -1,6 +1,4 @@
-package com.fsindustry.bach.core.model.role;
-
-import com.fsindustry.bach.core.constant.RoleName;
+package com.fsindustry.bach.core.node.role;
 
 public abstract class AbstractNodeRole {
 

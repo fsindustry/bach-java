@@ -1,4 +1,4 @@
-package com.fsindustry.bach.core.model;
+package com.fsindustry.bach.core.node.model;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
