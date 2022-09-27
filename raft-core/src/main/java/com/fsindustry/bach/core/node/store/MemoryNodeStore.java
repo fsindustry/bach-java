@@ -1,11 +1,26 @@
 package com.fsindustry.bach.core.node.store;
 
 import com.fsindustry.bach.core.node.model.NodeId;
+import lombok.Getter;
+import lombok.Setter;
 
+/**
+ * 基于内存保存Node状态
+ */
 public class MemoryNodeStore implements NodeStore {
 
+    /**
+     * 当前任期
+     */
+    @Getter
+    @Setter
     private int term;
 
+    /**
+     * 上一次投票给谁
+     */
+    @Getter
+    @Setter
     private NodeId votedFor;
 
     public MemoryNodeStore() {
@@ -14,26 +29,6 @@ public class MemoryNodeStore implements NodeStore {
 
     public MemoryNodeStore(int term, NodeId votedFor) {
         this.term = term;
-        this.votedFor = votedFor;
-    }
-
-    @Override
-    public int getTerm() {
-        return term;
-    }
-
-    @Override
-    public void setTerm(int term) {
-        this.term = term;
-    }
-
-    @Override
-    public NodeId getVotedFor() {
-        return votedFor;
-    }
-
-    @Override
-    public void setVotedFor(NodeId votedFor) {
         this.votedFor = votedFor;
     }
 

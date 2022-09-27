@@ -1,6 +1,7 @@
 package com.fsindustry.bach.core.node.model;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 /**
  * Store node information of one raft group
  */
+@Slf4j
 @Data
 public class NodeGroup {
 
@@ -47,6 +49,7 @@ public class NodeGroup {
 
     public Collection<GroupMember> listReplicationTarget() {
         return memberMap.values().stream()
+                // 排除当前节点
                 .filter(v -> !v.getEndpoint().getId().equals(this.seftId))
                 .collect(Collectors.toList());
     }
@@ -64,8 +67,14 @@ public class NodeGroup {
         }
 
         if (map.isEmpty()) {
+            log.error("endpoints is empty for nodeId: {}", seftId);
             throw new IllegalArgumentException("endpoints is empty.");
         }
         return map;
+    }
+
+    public int getCount() {
+        // todo 排除learner
+        return memberMap.size();
     }
 }

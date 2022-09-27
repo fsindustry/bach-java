@@ -11,10 +11,10 @@ public class AppendEntriesResult {
     /**
      * 选举term
      */
-    private final int term;
+    int term;
 
     /**
      * 是否追加成功
      */
-    private final boolean success;
+    boolean success;
 }

@@ -2,15 +2,15 @@ package com.fsindustry.bach.core.node;
 
 import com.fsindustry.bach.core.NodeContext;
 import com.fsindustry.bach.core.connector.msg.RequestVoteRpcMsg;
+import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteRpc;
+import com.fsindustry.bach.core.node.model.GroupMember;
 import com.fsindustry.bach.core.node.model.NodeId;
-import com.fsindustry.bach.core.node.role.AbstractNodeRole;
-import com.fsindustry.bach.core.node.role.Candidate;
-import com.fsindustry.bach.core.node.role.Follower;
-import com.fsindustry.bach.core.node.role.RoleName;
+import com.fsindustry.bach.core.node.role.*;
 import com.fsindustry.bach.core.node.store.NodeStore;
 import com.fsindustry.bach.core.schedule.ElectionTimeout;
+import com.fsindustry.bach.core.schedule.LogReplicationTask;
 import com.google.common.eventbus.Subscribe;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,12 +22,12 @@ public class NodeImpl implements Node {
     /**
      * 节点状态上下文
      */
-    private NodeContext context;
+    private final NodeContext context;
 
     /**
-     * 启动标识
+     * 当前节点是否启动
      */
-    private boolean started;
+    private volatile boolean started;
 
     /**
      * 当前节点的角色信息
@@ -44,7 +44,7 @@ public class NodeImpl implements Node {
             return;
         }
 
-        // 注册消息总线
+        // 注册消息总线，以便能够监听各类事件
         context.getEventBus().register(this);
         // 初始化Connector
         context.getConnector().initialize();
@@ -57,14 +57,15 @@ public class NodeImpl implements Node {
     @Override
     public void stop() throws InterruptedException {
         if (!started) {
-            throw new IllegalStateException("");
+            log.error("node {} was not started.", context.getSelfId());
+            throw new IllegalStateException(String.format("node %s was not started.", context.getSelfId()));
         }
 
-        // 关闭调度器
+        // 关闭调度器（从而停止产生消息）
         context.getScheduler().stop();
-        // 关闭Connector
+        // 关闭Connector（从而关闭网络）
         context.getConnector().close();
-        // 关闭主线程
+        // 关闭主线程（关闭状态机运行）
         context.getTaskExecutor().shutdown();
         started = false;
     }
@@ -79,18 +80,6 @@ public class NodeImpl implements Node {
                 doProcessRequestVoteRpc(msg),
                 msg
         ));
-    }
-
-    /**
-     * RequestVoteResult消息处理函数
-     */
-    @Subscribe
-    public void onReceiveRequestVoteResult(RequestVoteResult result) {
-        context.getTaskExecutor().submit(() -> doProcessRequestVoteResult(result));
-    }
-
-    private void doProcessRequestVoteResult(RequestVoteResult result) {
-
     }
 
     private RequestVoteResult doProcessRequestVoteRpc(RequestVoteRpcMsg msg) {
@@ -130,10 +119,83 @@ public class NodeImpl implements Node {
                 return new RequestVoteResult(rpc.getTerm(), false);
             }
             default: {
-                // todo 实现
-                log.error("");
-                throw new IllegalStateException("");
+                log.error("unknow status: {}", role.getName());
+                throw new IllegalStateException(String.format("unknow status: %s", role.getName()));
             }
+        }
+    }
+
+    /**
+     * RequestVoteResult消息处理函数
+     */
+    @Subscribe
+    public void onReceiveRequestVoteResult(RequestVoteResult result) {
+        context.getTaskExecutor().submit(() -> doProcessRequestVoteResult(result));
+    }
+
+    private void doProcessRequestVoteResult(RequestVoteResult result) {
+        // 场景1：若result.getTerm() > role.getTerm()，则当前节点退化为Follower
+        if (result.getTerm() > role.getTerm()) {
+            // todo leaderId从何而来？
+            becomeFollower(result.getTerm(), null, null, true);
+            return;
+        }
+
+        // result.getTerm() == role.getTerm()时，仅当当前节点仍然是CANDIDATE，才处理选举结果，否则忽略
+        if (!RoleName.CANDIDATE.equals(role.getName())) {
+            log.warn("current node is not candidate, ignore.");
+            return;
+        }
+
+        // 若result.getTerm() < role.getTerm()或者投了反对票，则忽略
+        if (result.getTerm() < role.getTerm() || !result.isVoteGranted()) {
+            log.info("unmatched vote, term: {}, voteGranted: {}", result.getTerm(), result.isVoteGranted());
+            return;
+        }
+
+        // 已获得的选票数
+        int votesCount = ((Candidate) role).getVotesCount() + 1;
+        // 已投票的节点数
+        int nodeCount = context.getGroup().getCount();
+
+        log.info("votes count {}, node count {}", votesCount, nodeCount);
+
+        // 取消选举定时器
+        role.cancelTimeoutOrTask();
+        if (votesCount > nodeCount / 2) { // 若投票过半，则变为Leader
+            log.info("candidate become leader, term: {}", role.getTerm());
+            // 创建日志追加定时任务，变更角色为leader
+            changeToRole(new Leader(role.getTerm(), scheduleLogReplicationTask()));
+            // todo 追加空日志到本地
+        } else { // 若投票未过半，则重置定时器，重新发起选举
+            changeToRole(new Candidate(role.getTerm(), votesCount, scheduleElectionTimeout()));
+        }
+    }
+
+    /**
+     * 创建并启动日志追加定时任务
+     */
+    private LogReplicationTask scheduleLogReplicationTask() {
+        return context.getScheduler().scheduleLogReplicationTask(this::replicateLog);
+    }
+
+    /**
+     * 日志追加定时任务入口方法
+     */
+    private void replicateLog() {
+        context.getTaskExecutor().submit(this::doReplicateLog);
+    }
+
+    private void doReplicateLog() {
+        log.debug("start to replicate log.");
+        // 发送AppendEntriesRpc
+        for (GroupMember member : context.getGroup().listReplicationTarget()) {
+            AppendEntriesRpc rpc = new AppendEntriesRpc();
+            rpc.setTerm(role.getTerm());
+            rpc.setLeaderId(context.getSelfId());
+            rpc.setPrevLogTerm(0);
+            rpc.setLeaderCommit(0);
+            context.getConnector().sendAppendEntries(rpc, member.getEndpoint());
         }
     }
 
@@ -141,16 +203,17 @@ public class NodeImpl implements Node {
         // 取消选举超时 / 心跳超时定时器
         role.cancelTimeoutOrTask();
         if (leaderId != null && !leaderId.equals(role.getLeaderId(context.getSelfId()))) {
-            // todo 补充
-            log.info("");
+            log.info("current leader is {}, term {}", leaderId, term);
         }
 
+        // 重置选举超时定时任务
         ElectionTimeout electionTimeout = scheduleElectionTimeout ? scheduleElectionTimeout() : ElectionTimeout.NONE;
         changeToRole(new Follower(term, votedFor, leaderId, electionTimeout));
     }
 
 
     private void changeToRole(AbstractNodeRole newRole) {
+        log.info("node {} , role state changed -> {}", context.getSelfId(), newRole);
         NodeStore store = context.getStore();
         store.setTerm(newRole.getTerm());
         if (newRole.getName() == RoleName.FOLLOWER) {
@@ -163,15 +226,17 @@ public class NodeImpl implements Node {
         return context.getScheduler().scheduleElectionTimeout(this::electionTimeout);
     }
 
+    /**
+     * 选举超时触发动作入口
+     */
     private void electionTimeout() {
         context.getTaskExecutor().submit(this::doProcessElectionTimeout);
     }
 
     private void doProcessElectionTimeout() {
-        // leader节点不存在选举超时
+        // 边界检查：leader节点不存在选举超时
         if (role.getName() == RoleName.LEADER) {
-            // TODO 补充
-            log.warn("");
+            log.warn("node {}, current role is leader, ignore election timeout.", context.getSelfId());
             return;
         }
 
@@ -188,6 +253,7 @@ public class NodeImpl implements Node {
         RequestVoteRpc rpc = RequestVoteRpc.builder()
                 .term(newTerm)
                 .candidateId(context.getSelfId())
+                // todo 补充index和term
                 .lastLogIndex(0)
                 .lastLogTerm(0)
                 .build();

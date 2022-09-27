@@ -8,12 +8,22 @@ import lombok.ToString;
 @ToString
 public class Follower extends AbstractNodeRole {
 
+    /**
+     * 投票给谁
+     */
     @Getter
     private final NodeId voteFor;
 
+    /**
+     * 当前leader是谁
+     */
     @Getter
     private final NodeId leaderId;
 
+    /**
+     * 选举超时定时器
+     * 若超时，则变为Candidate，发起选举
+     */
     @Getter
     private final ElectionTimeout electionTimeout;
 

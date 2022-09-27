@@ -18,6 +18,7 @@ public class SingleThreadTaskExecutor implements TaskExecutor {
     }
 
     public SingleThreadTaskExecutor(ThreadFactory factory) {
+        // 单线程执行器
         executorService = Executors.newSingleThreadExecutor(factory);
     }
 

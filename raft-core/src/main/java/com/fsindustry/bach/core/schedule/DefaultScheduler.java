@@ -32,7 +32,7 @@ public class DefaultScheduler implements Scheduler {
     private final int logReplicationInterval;
 
     /**
-     * 选举超时时间，随几部分生成器
+     * 选举超时时间，随机部分生成器
      */
     private final Random electionTimeoutRandom;
 
@@ -57,11 +57,13 @@ public class DefaultScheduler implements Scheduler {
         }
 
         electionTimeoutRandom = new Random();
+        // 使用单线程调度器
         executorService = Executors.newSingleThreadScheduledExecutor(f -> new Thread(f, "scheduler"));
     }
 
     @Override
     public LogReplicationTask scheduleLogReplicationTask(Runnable task) {
+        // 数据同步定时任务，以固定时间间隔运行
         ScheduledFuture<?> scheduledFuture = executorService.scheduleWithFixedDelay(task, logReplicationDelay, logReplicationInterval, TimeUnit.MILLISECONDS);
         return new LogReplicationTask(scheduledFuture);
     }
@@ -70,6 +72,7 @@ public class DefaultScheduler implements Scheduler {
     public ElectionTimeout scheduleElectionTimeout(Runnable task) {
         // 生成随机选举超时时间，在[minElectionTimeout, maxElectionTimeout]区间范围内
         int timeout = electionTimeoutRandom.nextInt(maxElectionTimeout - minElectionTimeout) + minElectionTimeout;
+        // 每次都是单次调度，因为要随着AppendLogMsg不停的重置，故不能以固定周期调度
         ScheduledFuture<?> scheduledFuture = executorService.schedule(task, timeout, TimeUnit.MILLISECONDS);
         return new ElectionTimeout(scheduledFuture);
     }

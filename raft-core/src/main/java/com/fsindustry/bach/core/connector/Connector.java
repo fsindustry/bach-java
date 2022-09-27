@@ -14,14 +14,30 @@ import java.util.Collection;
  */
 public interface Connector {
 
+    /**
+     * 初始化
+     */
     void initialize();
 
+    /**
+     * 发送RequestVoteRpc给多个Node
+     */
     void sendRequestVote(RequestVoteRpc rpc, Collection<NodeEndpoint> dest);
 
+    /**
+     * 回复RequestVoteResult给对应节点
+     */
     void replyRequestVote(RequestVoteResult result, RequestVoteRpcMsg dest);
 
+    /**
+     * 发送AppendEntriesRpc给目标节点
+     * 因为每个Node同步进度不一样，因此不能同时发送
+     */
     void sendAppendEntries(AppendEntriesRpc rpc, NodeEndpoint dest);
 
+    /**
+     * 回复AppendEntriesResult到目标节点
+     */
     void replyAppendEntries(AppendEntriesResult result, NodeEndpoint dest);
 
     /**

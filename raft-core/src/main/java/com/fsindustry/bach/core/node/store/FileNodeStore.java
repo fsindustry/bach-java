@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 基于文件存放节点状态
@@ -43,7 +44,6 @@ public class FileNodeStore implements NodeStore {
     private final SeekableFile seekableFile;
 
     @Getter
-    @Setter
     private int term = 0;
 
     @Getter
@@ -58,9 +58,8 @@ public class FileNodeStore implements NodeStore {
             seekableFile = new RandomAccessFileAdapter(file);
             initialOrLoad();
         } catch (IOException e) {
-            // todo 补充
-            log.error("");
-            throw new NodeStoreException("");
+            log.error("Failed to initial FileNodeStore. term: {}, votedFor: {}", term, votedFor);
+            throw new NodeStoreException(String.format("Failed to initial FileNodeStore. term: %s, votedFor: %s", term, votedFor), e);
         }
     }
 
@@ -69,9 +68,8 @@ public class FileNodeStore implements NodeStore {
             this.seekableFile = file;
             initialOrLoad();
         } catch (IOException e) {
-            // todo 补充
-            log.error("");
-            throw new NodeStoreException("");
+            log.error("Failed to initial FileNodeStore. term: {}, votedFor: {}", term, votedFor);
+            throw new NodeStoreException(String.format("Failed to initial FileNodeStore. term: %s, votedFor: %s", term, votedFor), e);
         }
     }
 
@@ -98,13 +96,44 @@ public class FileNodeStore implements NodeStore {
     }
 
     @Override
+    public void setTerm(int term) {
+        try {
+            seekableFile.seek(OFFSET_TERM);
+            seekableFile.writeInt(term);
+        } catch (IOException e) {
+            log.error("Failed to store term: {} to file.", term);
+            throw new NodeStoreException(String.format("Failed to store term: %s to file.", term), e);
+        }
+        this.term = term;
+    }
+
+    @Override
+    public void setVotedFor(NodeId votedFor) {
+        try {
+            seekableFile.seek(OFFSET_VOTED_FOR);
+            if (null == votedFor) {
+                seekableFile.writeInt(0);
+                seekableFile.truncate(8);
+            } else {
+                byte[] payload = votedFor.getValue().getBytes(StandardCharsets.UTF_8);
+                seekableFile.writeInt(payload.length);
+                seekableFile.write(payload);
+            }
+        } catch (IOException e) {
+            log.error("Failed to store votedFor: {} to file.", votedFor);
+            throw new NodeStoreException(String.format("Failed to store votedFor: %s to file.", votedFor), e);
+        }
+        this.votedFor = votedFor;
+    }
+
+
+    @Override
     public void close() {
         try {
             seekableFile.close();
         } catch (IOException e) {
-            // todo 补充
-            log.error("");
-            throw new NodeStoreException("");
+            log.error("Failed to close FileNodeStore. term: {}, votedFor: {}", term, votedFor);
+            throw new NodeStoreException(String.format("Failed to close FileNodeStore. term: %s, votedFor: %s", term, votedFor), e);
         }
     }
 }

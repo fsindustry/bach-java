@@ -14,6 +14,4 @@ public class GroupMember {
     private final NodeEndpoint endpoint;
 
     private ReplicatingState replicatingState;
-
-
 }

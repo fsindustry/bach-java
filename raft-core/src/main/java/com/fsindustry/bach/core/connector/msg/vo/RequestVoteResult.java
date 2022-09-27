@@ -11,10 +11,10 @@ public class RequestVoteResult {
     /**
      * 选举term
      */
-    private final int term;
+    int term;
 
     /**
      * 是否投票
      */
-    private final boolean voteGranted;
+    boolean voteGranted;
 }
