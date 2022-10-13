@@ -11,6 +11,7 @@ public class RandomAccessFileAdapter implements SeekableFile {
     private final RandomAccessFile randomAccessFile;
 
     public RandomAccessFileAdapter(File file) throws FileNotFoundException {
+        // 并非实时落盘
         this(file, "rw");
     }
 

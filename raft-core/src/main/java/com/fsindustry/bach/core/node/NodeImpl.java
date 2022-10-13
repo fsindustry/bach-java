@@ -1,7 +1,10 @@
 package com.fsindustry.bach.core.node;
 
 import com.fsindustry.bach.core.NodeContext;
+import com.fsindustry.bach.core.connector.msg.AppendEntriesResultMsg;
+import com.fsindustry.bach.core.connector.msg.AppendEntriesRpcMsg;
 import com.fsindustry.bach.core.connector.msg.RequestVoteRpcMsg;
+import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesResult;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteRpc;
@@ -73,6 +76,7 @@ public class NodeImpl implements Node {
     /**
      * RequestVoteRpc消息处理函数
      */
+    @Override
     @Subscribe
     public void onReceiveRequestVoteRpc(RequestVoteRpcMsg msg) {
         // 提交消息到任务队列执行
@@ -128,6 +132,7 @@ public class NodeImpl implements Node {
     /**
      * RequestVoteResult消息处理函数
      */
+    @Override
     @Subscribe
     public void onReceiveRequestVoteResult(RequestVoteResult result) {
         context.getTaskExecutor().submit(() -> doProcessRequestVoteResult(result));
@@ -258,5 +263,88 @@ public class NodeImpl implements Node {
                 .lastLogTerm(0)
                 .build();
         context.getConnector().sendRequestVote(rpc, context.getGroup().listEndpointExceptSelf());
+    }
+
+    @Override
+    @Subscribe
+    public void onReceiveAppendEntriesRpc(AppendEntriesRpcMsg msg) {
+        context.getTaskExecutor().submit(() ->
+                context.getConnector().replyAppendEntries(
+                        doProcessAppendEntriesRpc(msg),
+                        msg)
+        );
+    }
+
+    private AppendEntriesResult doProcessAppendEntriesRpc(AppendEntriesRpcMsg msg) {
+
+        AppendEntriesRpc rpc = msg.getRpc();
+        // 场景1：若收到的term比自己的term小，则返回自己的term
+        if (rpc.getTerm() < role.getTerm()) {
+            return new AppendEntriesResult(role.getTerm(), false);
+        }
+
+        // 场景2:若收到term比自己term大，则退化为发送消息Node的follower
+        if (rpc.getTerm() > role.getTerm()) {
+            becomeFollower(rpc.getTerm(), null, rpc.getLeaderId(), true);
+            // 追加日志，并返回结果
+            return new AppendEntriesResult(rpc.getTerm(), appendEntries(rpc));
+        }
+
+        // 场景3：若收到term等于自己term
+        assert (rpc.getTerm() == role.getTerm());
+        switch (role.getName()) {
+            // 若当前节点为follower，则重置选举超时定时器，追加日志
+            case FOLLOWER: {
+                // 重置选举定时器，保存leader信息
+                // todo 为什么此处需要传入votedFor字段
+                becomeFollower(rpc.getTerm(), ((Follower) role).getVoteFor(), rpc.getLeaderId(), true);
+                // 追加日志，并返回结果
+                return new AppendEntriesResult(rpc.getTerm(), appendEntries(rpc));
+            }
+            // 若当前节点为candidate，则重置选举定时器，追加日志
+            case CANDIDATE: {
+                // 重置选举定时器，保存leader信息
+                // todo 为什么此处需要传入votedFor字段
+                becomeFollower(rpc.getTerm(), null, rpc.getLeaderId(), true);
+                // 追加日志，并返回结果
+                return new AppendEntriesResult(rpc.getTerm(), appendEntries(rpc));
+            }
+            // 若当前节点为leader，则为垃圾消息，直接忽略
+            case LEADER: {
+                log.warn("receive append entries rpc from another leader {}, ignore.", rpc.getLeaderId());
+                return new AppendEntriesResult(rpc.getTerm(), false);
+            }
+            default: {
+                log.error("unknown role name: {}", role.getName());
+                throw new IllegalStateException(String.format("unknown role name: %s", role.getName()));
+            }
+        }
+    }
+
+    private boolean appendEntries(AppendEntriesRpc rpc) {
+        // TODO 待实现
+        return true;
+    }
+
+    @Override
+    @Subscribe
+    public void onReceiveAppendEntriesResult(AppendEntriesResultMsg msg) {
+        context.getTaskExecutor().submit(() -> doProcessAppendEntriesResult(msg));
+    }
+
+    private void doProcessAppendEntriesResult(AppendEntriesResultMsg msg) {
+        AppendEntriesResult result = msg.getResult();
+
+        // 若消息term大于当前term，则退化为follower
+        if (result.getTerm() > role.getTerm()) {
+            becomeFollower(result.getTerm(), null, null, true);
+            return;
+        }
+
+        if (!RoleName.LEADER.equals(role.getName())) {
+            log.warn("receive appendEntries result, but current node is not leader, ignore. source: {}", msg.getSourceNodeId());
+        }
+
+        // todo 更新日志提交进度
     }
 }

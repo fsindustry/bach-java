@@ -1,5 +1,6 @@
 package com.fsindustry.bach.core.connector;
 
+import com.fsindustry.bach.core.connector.msg.AppendEntriesRpcMsg;
 import com.fsindustry.bach.core.connector.msg.RequestVoteRpcMsg;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesResult;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
@@ -38,7 +39,7 @@ public interface Connector {
     /**
      * 回复AppendEntriesResult到目标节点
      */
-    void replyAppendEntries(AppendEntriesResult result, NodeEndpoint dest);
+    void replyAppendEntries(AppendEntriesResult result, AppendEntriesRpcMsg rpcMessage);
 
     /**
      * 关闭链接器

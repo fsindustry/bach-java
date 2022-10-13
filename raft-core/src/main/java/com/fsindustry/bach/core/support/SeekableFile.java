@@ -3,6 +3,9 @@ package com.fsindustry.bach.core.support;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * 抽象文件操作接口，方便测试
+ */
 public interface SeekableFile {
 
     long position() throws IOException;

@@ -1,5 +1,6 @@
 package com.fsindustry.bach.core.connector.msg.vo;
 
+import com.fsindustry.bach.core.log.entry.LogEntry;
 import com.fsindustry.bach.core.node.model.NodeId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,7 +42,7 @@ public class AppendEntriesRpc {
     /**
      * 待追加的日志条目
      */
-    private List<Entry> entries = Collections.emptyList();
+    private List<LogEntry> entries = Collections.emptyList();
 
     /**
      * leader的commitIndex
