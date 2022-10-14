@@ -30,8 +30,8 @@ public class FileEntrySequence extends AbstractEntrySequence {
     public FileEntrySequence(LogDir logDir, int logIndexOffset) {
         super(logIndexOffset);
         try {
-            this.entryFile = new EntryFile(logDir.getEntriesFile());
-            this.indexFile = new EntryIndexFile(logDir.getEntryOffsetIndexFile());
+            this.entryFile = new EntryFile(logDir.getEntryFile());
+            this.indexFile = new EntryIndexFile(logDir.getIndexFile());
             initialize();
         } catch (IOException e) {
             log.error("failed to open entries file or entry index file.", e);

@@ -1,5 +1,7 @@
 package com.fsindustry.bach.core.schedule;
 
+import com.fsindustry.bach.core.node.config.NodeConfig;
+
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,12 +43,12 @@ public class DefaultScheduler implements Scheduler {
      */
     private final ScheduledExecutorService executorService;
 
-    public DefaultScheduler(int minElectionTimeout, int maxElectionTimeout, int logReplicationDelay, int logReplicationInterval) {
+    public DefaultScheduler(NodeConfig config) {
 
-        this.minElectionTimeout = minElectionTimeout;
-        this.maxElectionTimeout = maxElectionTimeout;
-        this.logReplicationDelay = logReplicationDelay;
-        this.logReplicationInterval = logReplicationInterval;
+        this.minElectionTimeout = config.getMinElectionTimeout();
+        this.maxElectionTimeout = config.getMaxElectionTimeout();
+        this.logReplicationDelay = config.getLogReplicationDelay();
+        this.logReplicationInterval = config.getLogReplicationInterval();
 
         if (minElectionTimeout <= 0 || maxElectionTimeout <= 0 || minElectionTimeout > maxElectionTimeout) {
             throw new IllegalArgumentException("");

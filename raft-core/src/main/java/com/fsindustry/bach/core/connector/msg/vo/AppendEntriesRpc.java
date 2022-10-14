@@ -48,4 +48,8 @@ public class AppendEntriesRpc {
      * leader的commitIndex
      */
     private int leaderCommit;
+
+    public int getLastEntryIndex() {
+        return this.entries.isEmpty() ? this.prevLogIndex : this.entries.get(this.entries.size() - 1).getIndex();
+    }
 }

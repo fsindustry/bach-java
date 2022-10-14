@@ -21,5 +21,8 @@ public interface Scheduler {
      */
     ElectionTimeout scheduleElectionTimeout(Runnable task);
 
+    /**
+     * 停止调度器
+     */
     void stop() throws InterruptedException;
 }

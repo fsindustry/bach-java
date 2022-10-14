@@ -20,8 +20,8 @@ public abstract class AbstractLogDir implements LogDir {
             throw new LogException("failed to create directory " + dir);
         }
         try {
-            Files.touch(getEntriesFile());
-            Files.touch(getEntryOffsetIndexFile());
+            Files.touch(getEntryFile());
+            Files.touch(getIndexFile());
         } catch (IOException e) {
             throw new LogException("failed to create file", e);
         }
@@ -38,12 +38,12 @@ public abstract class AbstractLogDir implements LogDir {
     }
 
     @Override
-    public File getEntriesFile() {
+    public File getEntryFile() {
         return new File(dir, RootDir.FILE_NAME_ENTRIES);
     }
 
     @Override
-    public File getEntryOffsetIndexFile() {
+    public File getIndexFile() {
         return new File(dir, RootDir.FILE_NAME_ENTRY_OFFSET_INDEX);
     }
 

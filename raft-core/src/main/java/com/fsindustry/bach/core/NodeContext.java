@@ -3,7 +3,7 @@ package com.fsindustry.bach.core;
 import com.fsindustry.bach.core.connector.Connector;
 import com.fsindustry.bach.core.executor.TaskExecutor;
 import com.fsindustry.bach.core.log.Log;
-import com.fsindustry.bach.core.node.model.NodeEndpoint;
+import com.fsindustry.bach.core.node.config.NodeConfig;
 import com.fsindustry.bach.core.node.model.NodeGroup;
 import com.fsindustry.bach.core.node.model.NodeId;
 import com.fsindustry.bach.core.node.store.NodeStore;
@@ -56,4 +56,9 @@ public class NodeContext {
      * raft状态数据存储
      */
     private NodeStore store;
+
+    /**
+     * 节点相关配置
+     */
+    private NodeConfig config;
 }

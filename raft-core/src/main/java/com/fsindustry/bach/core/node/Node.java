@@ -10,21 +10,33 @@ import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
  */
 public interface Node {
 
-    // 启动
+    /**
+     * 启动
+     */
     void start();
 
-    // 停止
+    /**
+     * 停止
+     */
     void stop() throws InterruptedException;
 
-    // 收到选举请求的处理动作
+    /**
+     * 收到选举请求的处理动作
+     */
     void onReceiveRequestVoteRpc(RequestVoteRpcMsg msg);
 
-    // 收到选举响应的处理动作
+    /**
+     * 收到选举响应的处理动作
+     */
     void onReceiveRequestVoteResult(RequestVoteResult result);
 
-    // 收到追加日志请求的处理动作
+    /**
+     * 收到追加日志请求的处理动作
+     */
     void onReceiveAppendEntriesRpc(AppendEntriesRpcMsg msg);
 
-    // 收到追加日志响应的处理动作
+    /**
+     * 收到追加日志响应的处理动作
+     */
     void onReceiveAppendEntriesResult(AppendEntriesResultMsg msg);
 }

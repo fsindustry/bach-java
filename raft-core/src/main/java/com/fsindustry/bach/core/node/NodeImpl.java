@@ -8,6 +8,7 @@ import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesResult;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteRpc;
+import com.fsindustry.bach.core.log.entry.EntryMeta;
 import com.fsindustry.bach.core.node.model.GroupMember;
 import com.fsindustry.bach.core.node.model.NodeId;
 import com.fsindustry.bach.core.node.role.*;
@@ -94,8 +95,8 @@ public class NodeImpl implements Node {
             return new RequestVoteResult(role.getTerm(), false);
         }
 
-        // todo 实现投票策略
-        boolean voteForCandidate = true;
+        // 判断竞选的Candidate的日志是否比当前节点新
+        boolean voteForCandidate = !context.getLog().isNewerThan(rpc.getLastLogIndex(), rpc.getLastLogTerm());
 
         // 场景2：若rpc.term > role.term，则变为follower角色
         if (rpc.getTerm() > role.getTerm()) {
@@ -195,11 +196,7 @@ public class NodeImpl implements Node {
         log.debug("start to replicate log.");
         // 发送AppendEntriesRpc
         for (GroupMember member : context.getGroup().listReplicationTarget()) {
-            AppendEntriesRpc rpc = new AppendEntriesRpc();
-            rpc.setTerm(role.getTerm());
-            rpc.setLeaderId(context.getSelfId());
-            rpc.setPrevLogTerm(0);
-            rpc.setLeaderCommit(0);
+            AppendEntriesRpc rpc = context.getLog().createAppendEntriesRpc(role.getTerm(), context.getSelfId(), member.getNextIndex(), context.getConfig().getMaxReplicationEntries());
             context.getConnector().sendAppendEntries(rpc, member.getEndpoint());
         }
     }
@@ -253,14 +250,15 @@ public class NodeImpl implements Node {
         role.cancelTimeoutOrTask();
         // 变更角色为Candiate
         changeToRole(new Candidate(newTerm, scheduleElectionTimeout()));
+        // 获取最后一条日志元数据
+        EntryMeta last = context.getLog().getLastEntryMeta();
 
         // 发送RequestVote消息
         RequestVoteRpc rpc = RequestVoteRpc.builder()
                 .term(newTerm)
                 .candidateId(context.getSelfId())
-                // todo 补充index和term
-                .lastLogIndex(0)
-                .lastLogTerm(0)
+                .lastLogIndex(last.getIndex())
+                .lastLogTerm(last.getTerm())
                 .build();
         context.getConnector().sendRequestVote(rpc, context.getGroup().listEndpointExceptSelf());
     }
@@ -322,8 +320,13 @@ public class NodeImpl implements Node {
     }
 
     private boolean appendEntries(AppendEntriesRpc rpc) {
-        // TODO 待实现
-        return true;
+        // 追加当前日志
+        boolean result = context.getLog().appendEntriesFromLeader(rpc.getPrevLogIndex(), rpc.getPrevLogTerm(), rpc.getEntries());
+        if (result) {
+            // 提交上一次追加日志，为什么要用 min( commitIndex, lastIndex )
+            context.getLog().advanceCommitIndex(Math.min(rpc.getLeaderCommit(), rpc.getLastEntryIndex()), rpc.getTerm());
+        }
+        return result;
     }
 
     @Override
@@ -345,6 +348,31 @@ public class NodeImpl implements Node {
             log.warn("receive appendEntries result, but current node is not leader, ignore. source: {}", msg.getSourceNodeId());
         }
 
-        // todo 更新日志提交进度
+        // 更新日志提交进度
+        NodeId sourceNodeId = msg.getSourceNodeId();
+        GroupMember member = context.getGroup().getMember(sourceNodeId);
+        if (member == null) {
+            log.warn("unexpected nodeId: {}, node maybe removed.", sourceNodeId);
+            return;
+        }
+
+        AppendEntriesRpc rpc = msg.getRpc();
+        // 若追加日志成功
+        if (result.isSuccess()) {
+            // 若追加日志成功， 更新本地日志的提交和追加进度
+            if (member.advanceReplicatingState(rpc.getLastEntryIndex())) {
+                // 计算提交过半的commitIndex，并提交日志
+                // 计算方法：对所有node根据matchIndex排序，取中间节点的matchIndex，即为提交过半的commitIndex
+                context.getLog().advanceCommitIndex(context.getGroup().getMatchIndexOfMajor(), role.getTerm());
+            }
+        }
+        // 若追加日志失败
+        else {
+            // 回退追加日志索引
+            // todo 回退后，下一次日志追加消息什么地方发送？
+            if (member.backOffNextIndex()) {
+                log.warn("can't back off next index any more, node: {}", sourceNodeId);
+            }
+        }
     }
 }

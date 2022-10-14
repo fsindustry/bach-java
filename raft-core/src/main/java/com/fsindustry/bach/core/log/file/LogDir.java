@@ -7,24 +7,38 @@ import java.io.File;
  */
 public interface LogDir {
 
-    // 初始化目录
+    /**
+     * 初始化目录
+     */
     void initialize();
 
-    // 判断目录是否存在
+    /**
+     * 判断目录是否存在
+     */
     boolean exists();
 
-    // 获取快照文件
+    /**
+     * 获取快照文件
+     */
     File getSnapshotFile();
 
-    // 获取日志文件
-    File getEntriesFile();
+    /**
+     * 获取日志文件
+     */
+    File getEntryFile();
 
-    // 获取索引文件
-    File getEntryOffsetIndexFile();
+    /**
+     * 获取索引文件
+     */
+    File getIndexFile();
 
-    // 获取目录
+    /**
+     * 获取目录
+     */
     File get();
 
-    // 重命名目录
+    /**
+     * 重命名目录
+     */
     boolean renameTo(LogDir logDir);
 }
