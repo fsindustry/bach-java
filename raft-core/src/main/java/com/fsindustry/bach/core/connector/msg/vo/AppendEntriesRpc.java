@@ -20,7 +20,7 @@ import java.util.List;
 public class AppendEntriesRpc {
 
     /**
-     * 选举term
+     * leader节点term
      */
     private int term;
 
@@ -40,14 +40,15 @@ public class AppendEntriesRpc {
     private int prevLogTerm;
 
     /**
+     * leader的commitIndex
+     */
+    private int leaderCommit;
+
+    /**
      * 待追加的日志条目
      */
     private List<LogEntry> entries = Collections.emptyList();
 
-    /**
-     * leader的commitIndex
-     */
-    private int leaderCommit;
 
     public int getLastEntryIndex() {
         return this.entries.isEmpty() ? this.prevLogIndex : this.entries.get(this.entries.size() - 1).getIndex();

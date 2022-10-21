@@ -1,6 +1,6 @@
 package com.fsindustry.bach.core.connector.msg;
 
-import com.fsindustry.bach.core.connector.Channel;
+import com.fsindustry.bach.core.connector.channel.RaftChannel;
 import com.fsindustry.bach.core.node.model.NodeId;
 import lombok.Getter;
 
@@ -16,9 +16,9 @@ public abstract class AbstractRpcMsg<T> {
     private final NodeId sourceNodeId;
 
     @Getter
-    private final Channel channel;
+    private final RaftChannel channel;
 
-    public AbstractRpcMsg(T rpc, NodeId sourceNodeId, Channel channel) {
+    public AbstractRpcMsg(T rpc, NodeId sourceNodeId, RaftChannel channel) {
         this.rpc = rpc;
         this.sourceNodeId = sourceNodeId;
         this.channel = channel;

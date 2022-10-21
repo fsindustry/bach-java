@@ -42,6 +42,11 @@ public interface Connector {
     void replyAppendEntries(AppendEntriesResult result, AppendEntriesRpcMsg rpcMessage);
 
     /**
+     * 重置连接
+     */
+    void resetChannels();
+
+    /**
      * 关闭链接器
      */
     void close();
