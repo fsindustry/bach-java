@@ -17,7 +17,7 @@ public class NioRaftChannel implements RaftChannel {
 
     private final Channel channel;
 
-    NioRaftChannel(io.netty.channel.Channel channel) {
+    public NioRaftChannel(io.netty.channel.Channel channel) {
         this.channel = channel;
     }
 

@@ -1,7 +1,7 @@
 package com.fsindustry.bach.core.connector.channel;
 
 import com.fsindustry.bach.core.connector.exception.ChannelConnectException;
-import com.fsindustry.bach.core.connector.handler.MsgDispatchHandler;
+import com.fsindustry.bach.core.connector.handler.ClientMsgDispatchHandler;
 import com.fsindustry.bach.core.connector.handler.RequestDecoder;
 import com.fsindustry.bach.core.connector.handler.ResponseEncoder;
 import com.fsindustry.bach.core.node.model.Address;
@@ -40,6 +40,8 @@ public class OutboundChannelGroup {
 
     public NioRaftChannel getOrConnect(NodeId nodeId, Address address) {
         Future<NioRaftChannel> future = channelMap.get(nodeId);
+
+        // 若没有到对应节点的连接，则新建一个
         if (future == null) {
             FutureTask<NioRaftChannel> newFuture = new FutureTask<>(() -> connect(nodeId, address));
             future = channelMap.putIfAbsent(nodeId, newFuture);
@@ -48,6 +50,7 @@ public class OutboundChannelGroup {
                 newFuture.run();
             }
         }
+
         try {
             return future.get();
         } catch (Exception e) {
@@ -78,8 +81,8 @@ public class OutboundChannelGroup {
                         pipeline.addLast(new RequestDecoder());
                         // 响应打包
                         pipeline.addLast(new ResponseEncoder());
-                        // 业务逻辑处理
-                        pipeline.addLast(new MsgDispatchHandler(eventBus, nodeId, selfNodeId));
+                        // 客户端消息分发处理
+                        pipeline.addLast(new ClientMsgDispatchHandler(eventBus, nodeId, selfNodeId));
                     }
                 });
         ChannelFuture future = bootstrap.connect(address.getHost(), address.getPort()).sync();

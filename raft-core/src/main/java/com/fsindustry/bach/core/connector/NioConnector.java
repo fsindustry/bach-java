@@ -2,11 +2,12 @@ package com.fsindustry.bach.core.connector;
 
 import com.fsindustry.bach.core.connector.channel.InboundChannelGroup;
 import com.fsindustry.bach.core.connector.channel.OutboundChannelGroup;
+import com.fsindustry.bach.core.connector.channel.RaftChannel;
 import com.fsindustry.bach.core.connector.exception.ChannelConnectException;
 import com.fsindustry.bach.core.connector.exception.ConnectorException;
-import com.fsindustry.bach.core.connector.handler.MsgDispatchHandler;
 import com.fsindustry.bach.core.connector.handler.RequestDecoder;
 import com.fsindustry.bach.core.connector.handler.ResponseEncoder;
+import com.fsindustry.bach.core.connector.handler.ServerMsgDispatchHandler;
 import com.fsindustry.bach.core.connector.msg.AppendEntriesRpcMsg;
 import com.fsindustry.bach.core.connector.msg.RequestVoteRpcMsg;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesResult;
@@ -15,6 +16,7 @@ import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteRpc;
 import com.fsindustry.bach.core.node.model.NodeEndpoint;
 import com.fsindustry.bach.core.node.model.NodeId;
+import com.google.common.base.Preconditions;
 import com.google.common.eventbus.EventBus;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -24,11 +26,15 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * 基于Netty实现的Connector
+ */
 @Slf4j
 @ThreadSafe
 public class NioConnector implements Connector {
@@ -106,9 +112,12 @@ public class NioConnector implements Connector {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
+                        // 请求解析
                         pipeline.addLast(new RequestDecoder());
+                        // 响应打包
                         pipeline.addLast(new ResponseEncoder());
-                        pipeline.addLast(new MsgDispatchHandler(eventBus, inboundChannelGroup));
+                        // 服务端消息分发处理
+                        pipeline.addLast(new ServerMsgDispatchHandler(eventBus, inboundChannelGroup));
                     }
                 });
         log.debug("node listen on port {}", port);
@@ -120,8 +129,13 @@ public class NioConnector implements Connector {
     }
 
     @Override
-    public void sendRequestVote(RequestVoteRpc rpc, Collection<NodeEndpoint> dest) {
-
+    public void sendRequestVote(@Nonnull RequestVoteRpc rpc, @Nonnull Collection<NodeEndpoint> dest) {
+        Preconditions.checkNotNull(rpc);
+        Preconditions.checkNotNull(dest);
+        for (NodeEndpoint endpoint : dest) {
+            log.debug("send {} to node {}", rpc, endpoint.getId());
+            executorService.execute(() -> getChannel(endpoint).writeRequestVoteRpc(rpc));
+        }
     }
 
     @Override
@@ -154,5 +168,9 @@ public class NioConnector implements Connector {
         if (!workerGroupShared) {
             workerGroup.shutdownGracefully();
         }
+    }
+
+    private RaftChannel getChannel(NodeEndpoint endpoint) {
+        return outboundChannelGroup.getOrConnect(endpoint.getId(), endpoint.getAddress());
     }
 }
