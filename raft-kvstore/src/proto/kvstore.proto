@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option java_package = "com.fsindustry.batch.kvstore";
+option java_outer_classname = "Protos";
+
+message RedirectResp {
+  string leader_id = 1;
+}
+
+message SuccessResp {}
+
+message FailureResp {
+  int32 error_code = 1;
+  string message = 2;
+}
+
+message SetCommand {
+  string request_id = 1;
+  string key = 2;
+  bytes value = 3;
+}
+
+message GetCommand {
+  string key = 1;
+}
+
+message GetCommandResp {
+  bool found = 1;
+  bytes value = 2;
+}
