@@ -98,6 +98,10 @@ public class NodeGroup {
         return memberMap.size();
     }
 
+    public GroupMember findSelf() {
+        return findMember(selfId);
+    }
+
 
     /**
      * Node match index.

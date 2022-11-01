@@ -11,5 +11,11 @@
 
     <artifactId>raft-kvstore</artifactId>
 
-
+    <dependencies>
+        <dependency>
+            <groupId>com.fsindustry</groupId>
+            <artifactId>raft-core</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 </project>
