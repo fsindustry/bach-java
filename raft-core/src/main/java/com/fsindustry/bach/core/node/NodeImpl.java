@@ -9,15 +9,21 @@ import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteResult;
 import com.fsindustry.bach.core.connector.msg.vo.RequestVoteRpc;
 import com.fsindustry.bach.core.log.entry.EntryMeta;
+import com.fsindustry.bach.core.log.statemachine.StateMachine;
+import com.fsindustry.bach.core.node.exception.NotLeaderException;
 import com.fsindustry.bach.core.node.model.GroupMember;
+import com.fsindustry.bach.core.node.model.NodeEndpoint;
 import com.fsindustry.bach.core.node.model.NodeId;
 import com.fsindustry.bach.core.node.role.*;
 import com.fsindustry.bach.core.node.store.NodeStore;
 import com.fsindustry.bach.core.schedule.ElectionTimeout;
 import com.fsindustry.bach.core.schedule.LogReplicationTask;
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.FutureCallback;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 @Slf4j
@@ -40,6 +46,31 @@ public class NodeImpl implements Node {
 
     public NodeImpl(NodeContext context) {
         this.context = context;
+    }
+
+    /**
+     * 核心线程调度任务异常回调
+     */
+    private static final FutureCallback<Object> LOGGING_FUTURE_CALLBACK = new FutureCallback<Object>() {
+        @Override
+        public void onSuccess(@Nullable Object result) {
+        }
+
+        @Override
+        public void onFailure(@Nonnull Throwable t) {
+            log.warn("failure", t);
+        }
+    };
+
+
+    @Override
+    public void registerStateMachine(StateMachine stateMachine) {
+        context.getLog().setStateMachine(stateMachine);
+    }
+
+    @Override
+    public RoleNameAndLeaderId getRoleNameAndLeaderId() {
+        return role.getNameAndLeaderId(context.getSelfId());
     }
 
     @Override
@@ -335,6 +366,7 @@ public class NodeImpl implements Node {
         context.getTaskExecutor().submit(() -> doProcessAppendEntriesResult(msg));
     }
 
+
     private void doProcessAppendEntriesResult(AppendEntriesResultMsg msg) {
         AppendEntriesResult result = msg.getResult();
 
@@ -374,5 +406,29 @@ public class NodeImpl implements Node {
                 log.warn("can't back off next index any more, node: {}", sourceNodeId);
             }
         }
+    }
+
+    @Override
+    public void appendLog(byte[] commandBytes) {
+        ensureLeader();
+        context.getTaskExecutor().submit(() -> {
+            // 追加日志
+            context.getLog().appendEntry(role.getTerm(), commandBytes);
+            // 发送appendEntriesRpc给其它节点
+            doReplicateLog();
+        }, LOGGING_FUTURE_CALLBACK);
+    }
+
+    /**
+     * Ensure leader status
+     */
+    private void ensureLeader() {
+        RoleNameAndLeaderId result = role.getNameAndLeaderId(context.getSelfId());
+        if (result.getRoleName() == RoleName.LEADER) {
+            return;
+        }
+        // 若不是leader，则报错
+        NodeEndpoint endpoint = result.getLeaderId() != null ? context.getGroup().findMember(result.getLeaderId()).getEndpoint() : null;
+        throw new NotLeaderException(result.getRoleName(), endpoint);
     }
 }

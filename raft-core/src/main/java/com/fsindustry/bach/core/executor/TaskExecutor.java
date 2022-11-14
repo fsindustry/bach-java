@@ -1,5 +1,8 @@
 package com.fsindustry.bach.core.executor;
 
+import com.google.common.util.concurrent.FutureCallback;
+
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -9,17 +12,27 @@ import java.util.concurrent.Future;
 public interface TaskExecutor {
 
     /**
-     * 提交不带返回值的任务
+     * Submit task.
      */
     Future<?> submit(Runnable task);
 
     /**
-     * 提交带返回值的任务
+     * Submit callable task.
      */
     <V> Future<V> submit(Callable<V> task);
 
     /**
-     * 关闭执行器
+     * Submit task with callback.
+     */
+    void submit(Runnable task, FutureCallback<Object> callback);
+
+    /**
+     * Submit task with callbacks.
+     */
+    void submit(Runnable task, Collection<FutureCallback<Object>> callbacks);
+
+    /**
+     * Shutdown.
      */
     void shutdown() throws InterruptedException;
 }

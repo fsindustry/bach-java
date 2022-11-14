@@ -1,11 +1,13 @@
 package com.fsindustry.bach.core.executor;
 
+import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.FutureCallback;
+
+import javax.annotation.Nonnull;
+import java.util.Collection;
 import java.util.concurrent.*;
 
-/**
- * 单线程执行器
- */
-public class SingleThreadTaskExecutor implements TaskExecutor {
+public class SingleThreadTaskExecutor extends AbstractTaskExecutor {
 
     private final ExecutorService executorService;
 
@@ -14,22 +16,39 @@ public class SingleThreadTaskExecutor implements TaskExecutor {
     }
 
     public SingleThreadTaskExecutor(String name) {
-        this(r -> new Thread(name));
+        this(r -> new Thread(r, name));
     }
 
-    public SingleThreadTaskExecutor(ThreadFactory factory) {
-        // 单线程执行器
-        executorService = Executors.newSingleThreadExecutor(factory);
+    private SingleThreadTaskExecutor(ThreadFactory threadFactory) {
+        executorService = Executors.newSingleThreadExecutor(threadFactory);
     }
 
     @Override
-    public Future<?> submit(Runnable task) {
+    @Nonnull
+    public Future<?> submit(@Nonnull Runnable task) {
+        Preconditions.checkNotNull(task);
         return executorService.submit(task);
     }
 
     @Override
-    public <V> Future<V> submit(Callable<V> task) {
+    @Nonnull
+    public <V> Future<V> submit(@Nonnull Callable<V> task) {
+        Preconditions.checkNotNull(task);
         return executorService.submit(task);
+    }
+
+    @Override
+    public void submit(@Nonnull Runnable task, @Nonnull Collection<FutureCallback<Object>> callbacks) {
+        Preconditions.checkNotNull(task);
+        Preconditions.checkNotNull(callbacks);
+        executorService.submit(() -> {
+            try {
+                task.run();
+                callbacks.forEach(c -> c.onSuccess(null));
+            } catch (Exception e) {
+                callbacks.forEach(c -> c.onFailure(e));
+            }
+        });
     }
 
     @Override

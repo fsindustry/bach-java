@@ -22,4 +22,8 @@ public abstract class AbstractNodeRole {
      * 获取当前group的leaderId
      */
     public abstract NodeId getLeaderId(NodeId selfId);
+
+    public RoleNameAndLeaderId getNameAndLeaderId(NodeId selfId) {
+        return new RoleNameAndLeaderId(name, getLeaderId(selfId));
+    }
 }

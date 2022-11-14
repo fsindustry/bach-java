@@ -3,6 +3,7 @@ package com.fsindustry.bach.core.log;
 import com.fsindustry.bach.core.log.file.LogGeneration;
 import com.fsindustry.bach.core.log.file.RootDir;
 import com.fsindustry.bach.core.log.sequence.FileEntrySequence;
+import com.google.common.eventbus.EventBus;
 
 import java.io.File;
 
@@ -10,7 +11,7 @@ public class FileLog extends AbstractLog {
 
     private final RootDir rootDir;
 
-    public FileLog(File baseDir) {
+    public FileLog(File baseDir, EventBus eventBus) {
         // 创建相关目录
         this.rootDir = new RootDir(baseDir);
 

@@ -5,6 +5,7 @@ import com.fsindustry.bach.core.log.entry.EntryMeta;
 import com.fsindustry.bach.core.log.entry.GeneralEntry;
 import com.fsindustry.bach.core.log.entry.LogEntry;
 import com.fsindustry.bach.core.log.entry.NoopEntry;
+import com.fsindustry.bach.core.log.statemachine.StateMachine;
 import com.fsindustry.bach.core.node.model.NodeId;
 
 import java.util.List;
@@ -72,4 +73,9 @@ public interface Log {
      * 关闭
      */
     void close();
+
+    /**
+     * Set state machine.
+     */
+    void setStateMachine(StateMachine stateMachine);
 }

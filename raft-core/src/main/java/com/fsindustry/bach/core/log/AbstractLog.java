@@ -3,7 +3,9 @@ package com.fsindustry.bach.core.log;
 import com.fsindustry.bach.core.connector.msg.vo.AppendEntriesRpc;
 import com.fsindustry.bach.core.log.entry.*;
 import com.fsindustry.bach.core.log.sequence.EntrySequence;
+import com.fsindustry.bach.core.log.statemachine.StateMachine;
 import com.fsindustry.bach.core.node.model.NodeId;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
@@ -16,6 +18,12 @@ public abstract class AbstractLog implements Log {
 
     protected EntrySequence sequence;
     protected int commitIndex = 0;
+
+    /**
+     * 日志状态机
+     */
+    @Setter
+    private StateMachine stateMachine;
 
     public EntryMeta getLastEntryMeta() {
         if (sequence.isEmpty()) {
